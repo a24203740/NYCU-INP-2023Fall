@@ -3,12 +3,6 @@
     This code is used for INP fall 2023 lab 1
     author is TwoFourTwo (hsuchy)
 
-    Usage of code must follow YCIFH-IPYTD license
-
-    YCIFLS-IPYUYBM license:
-        You Copy It For Lab Submission, I Punch You Until You Become Mesh
-
-
 */
 #include <string>
 #include <iostream>
@@ -16,6 +10,10 @@
 #include <pcap/pcap.h>
 #include <iomanip> 
 #include <vector>
+
+#define IP_PACKET_START 20
+#define UDP_HEADER_LENGTH 8
+#define IP_HEADER_FIXED_SIZE 20;
 
 using namespace std;
 
@@ -97,10 +95,9 @@ class parser
 
     void parsePacket_IPHeaderLength(const u_char* Data, packetInfo& currentPacketInfo)
     {
-        int IPPacketStart = 20;
         // 20th byte is ip.hdr_len, but first half byte is IP version, second half byte is IP header length
         // and, for example, if the second half byte is 5, than it means IP header is 5 * 4 = 20 bytes long.
-        int IPheaderLength = (int(Data[IPPacketStart]) % 16) * 4;
+        int IPheaderLength = (int(Data[IP_PACKET_START]) % 16) * 4;
         currentPacketInfo.ipHeaderLength = IPheaderLength;
         if(verbose)
         {
@@ -110,11 +107,10 @@ class parser
     void parsePacket_UDPpayloadLength(const u_char* Data, packetInfo& currentPacketInfo, int UDPpacketStart)
     {
         // fifth and sixth byte in UDP header store UDP packet length, include header
-        // and UDP header is 8 bytes;
         int UDPHeaderLengthFieldStart = UDPpacketStart + 4;
 
         currentPacketInfo.UDPpayloadLength = 
-            int(Data[UDPHeaderLengthFieldStart]) * 256 + int(Data[UDPHeaderLengthFieldStart + 1]) - 8;
+            int(Data[UDPHeaderLengthFieldStart]) * 256 + int(Data[UDPHeaderLengthFieldStart + 1]) - UDP_HEADER_LENGTH;
 
         if(verbose)
         {
@@ -157,11 +153,11 @@ class parser
     }
     void parsePacket_Payload(const u_char* Data, packetInfo& currentPacketInfo, int UDPpacketStart)
     {
-        int UDPpayloadStart = UDPpacketStart + 8;
+        int UDPpayloadStart = UDPpacketStart + UDP_HEADER_LENGTH;
 
         if(currentPacketInfo.UDPpayloadLength <= 10)
         {
-            cout << "[WARRNING]: not a valid packet" << endl;
+            cout << "[WARNING]: not a valid packet" << endl;
             return;
         }
 
@@ -173,7 +169,7 @@ class parser
     void parsePacket_pcapData(const u_char* Data, packetInfo& currentPacketInfo)
     {
         parsePacket_IPHeaderLength(Data, currentPacketInfo);
-        int UDPpacketStart = 20 + currentPacketInfo.ipHeaderLength;
+        int UDPpacketStart = IP_PACKET_START + currentPacketInfo.ipHeaderLength;
         parsePacket_UDPpayloadLength(Data, currentPacketInfo, UDPpacketStart);
         parsePacket_Payload(Data, currentPacketInfo, UDPpacketStart);
     }
@@ -220,8 +216,8 @@ class parser
         {
             if(info.packetSeqNumber > beginSeqNum && info.packetSeqNumber < endSeqNum)
             {
-                flag[info.packetSeqNumber - beginSeqNum - 1] = 
-                    info.UDPpayloadLength + info.ipHeaderLength - 20;
+                int positionInFlag = info.packetSeqNumber - beginSeqNum - 1;
+                flag[positionInFlag] = info.UDPpayloadLength + info.ipHeaderLength - IP_HEADER_FIXED_SIZE;
             }
         }
         for(int i = 0; i < flagSize; i++)
