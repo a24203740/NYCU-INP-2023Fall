@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # if no input argument is provided
-if [ "${1}" == "" ]; then
-    echo "Usage: getFlag <id>"
+if [ "${1}" == "" ] || [ "${2}" == "" ] ; then
+    echo "Usage: getFlag <id> <sudo password>"
     exit -1
-elif [ $# -ne 1 ]; then
+elif [ $# -ne 2 ]; then
     echo "Too many/few args!"
     exit -1
 fi
@@ -13,6 +13,7 @@ RED='\033[0;31m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+SUDO_PASSWD=${2}
 GETFLAG_WORKSPACE_FOLDER="$(pwd)"
 GETFLAG_TMP_FOLDER="${GETFLAG_WORKSPACE_FOLDER}/intermidateFileFolderOfGetFlagScript"
 # SERVER_ADDRESS="inp.zoolab.org"
@@ -20,6 +21,7 @@ SERVER_ADDRESS="127.0.0.1"
 
 export GETFLAG_WORKSPACE_FOLDER
 export GETFLAG_TMP_FOLDER
+export SUDO_PASSWD
 export RED
 export CYAN
 export NC

@@ -20,7 +20,7 @@ echo "chals ${CHALS_ID}" > ${GETFLAG_TMP_FOLDER}/ncChalsInput
 
 # -E:   Indicates to the security policy that the user wishes to preserve their existing environment variables.
 # &:    background process
-echo "242" | sudo -E bash ${GETFLAG_WORKSPACE_FOLDER}/TCPdumpHandler.sh &
+echo ${SUDO_PASSWD} | sudo -E bash ${GETFLAG_WORKSPACE_FOLDER}/TCPdumpHandler.sh &
 
 sleep 5
 
@@ -38,6 +38,6 @@ do
 done
 
 echo -e "${CYAN}Chals success, Killing tcpdump${NC}"
-echo "242" | sudo kill -SIGINT $(ps -a o pid,comm | tr -s ' ' | grep tcpdump | cut -d ' ' -f 2)
+echo ${SUDO_PASSWD} | sudo kill -SIGINT $(ps -a o pid,comm | tr -s ' ' | grep tcpdump | cut -d ' ' -f 1)
 
 exit 0
