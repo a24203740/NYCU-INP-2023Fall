@@ -15,12 +15,15 @@ NC='\033[0m' # No Color
 
 GETFLAG_WORKSPACE_FOLDER="$(pwd)"
 GETFLAG_TMP_FOLDER="${GETFLAG_WORKSPACE_FOLDER}/intermidateFileFolderOfGetFlagScript"
+# SERVER_ADDRESS="inp.zoolab.org"
+SERVER_ADDRESS="127.0.0.1"
 
 export GETFLAG_WORKSPACE_FOLDER
 export GETFLAG_TMP_FOLDER
 export RED
 export CYAN
 export NC
+export SERVER_ADDRESS
 
 if [ -d ${GETFLAG_TMP_FOLDER} ]; then
 	echo -e "${RED}${GETFLAG_TMP_FOLDER} exists, remove it.${NC}"
@@ -45,7 +48,7 @@ echo -e "${CYAN}Got PCAP file store at ${GETFLAG_WORKSPACE_FOLDER}/TCP_dump_file
 echo -e "${CYAN}Get Flag: $(cat ./FlagOutput | cut -c 7-)${NC}"
 
 echo -e "${CYAN}sending verfy to server${NC}"
-timeout 1 nc -u inp.zoolab.org 10495 < ./FlagOutput | tee ${GETFLAG_WORKSPACE_FOLDER}/ncVerfyOutput
+timeout 1 nc -u ${SERVER_ADDRESS} 10495 < ./FlagOutput | tee ${GETFLAG_WORKSPACE_FOLDER}/ncVerfyOutput
 
 echo -e "${CYAN}script done${NC}"
 

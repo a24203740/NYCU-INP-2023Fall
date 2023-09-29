@@ -4,7 +4,7 @@ for (( i=1; i<=10; i=i+1 ))
 do
     echo -e "${CYAN}sending hello to server${NC}"
     
-    timeout 1 nc -u inp.zoolab.org 10495 < ${GETFLAG_TMP_FOLDER}/ncHelloInput | tee ${GETFLAG_TMP_FOLDER}/ncChalsInput
+    timeout 1 nc -u ${SERVER_ADDRESS} 10495 < ${GETFLAG_TMP_FOLDER}/ncHelloInput | tee ${GETFLAG_TMP_FOLDER}/ncChalsInput
 
     if [ "$(cat ${GETFLAG_TMP_FOLDER}/ncChalsInput | grep OK)" != "" ]; then
         break
@@ -28,7 +28,7 @@ for (( i=1; i<=10; i=i+1 ))
 do
     echo -e "${CYAN}sending chals to server${NC}"
     
-    timeout 3 nc -u inp.zoolab.org 10495 < ${GETFLAG_TMP_FOLDER}/ncChalsInput > ${GETFLAG_TMP_FOLDER}/ncChalsResponse
+    timeout 3 nc -u ${SERVER_ADDRESS} 10495 < ${GETFLAG_TMP_FOLDER}/ncChalsInput > ${GETFLAG_TMP_FOLDER}/ncChalsResponse
 
     if [ "$(cat ${GETFLAG_TMP_FOLDER}/ncChalsResponse | grep SEQ | head -n 3)" != "" ]; then
         break
