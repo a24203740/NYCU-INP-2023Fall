@@ -6,6 +6,7 @@
 */
 #include <string>
 #include <iostream>
+#include <fstream>
 // to compile it, you need to add -lpcap
 #include <pcap/pcap.h>
 #include <iomanip> 
@@ -52,6 +53,8 @@ class parser
     vector<packetInfo> packetInfoList;
     int beginSeqNum;
     int endSeqNum;
+
+    string outputFlag;
 
     void printPacket_Size(int captureLen, int expectedLen)
     {
@@ -211,19 +214,16 @@ class parser
     void assembleFlag()
     {
         int flagSize = endSeqNum - beginSeqNum - 1;
-        vector<char> flag(flagSize);
+        outputFlag.assign(flagSize, ' ');
         for(const auto& info : packetInfoList)
         {
             if(info.packetSeqNumber > beginSeqNum && info.packetSeqNumber < endSeqNum)
             {
                 int positionInFlag = info.packetSeqNumber - beginSeqNum - 1;
-                flag[positionInFlag] = info.UDPpayloadLength + info.ipHeaderLength - IP_HEADER_FIXED_SIZE;
+                outputFlag[positionInFlag] = info.UDPpayloadLength + info.ipHeaderLength - IP_HEADER_FIXED_SIZE;
             }
         }
-        for(int i = 0; i < flagSize; i++)
-        {
-            cout << flag[i];
-        }
+        cout << outputFlag;
         cout << '\n';
     }
 
@@ -250,6 +250,7 @@ public:
         packetInfoList.clear();
         beginSeqNum = 0;
         endSeqNum = 0;
+        outputFlag = "";
     }
 
     void plzJustShutUp()
@@ -257,12 +258,14 @@ public:
         verbose = false;
     }
 
-    void start(string filename)
+    string start(string filename)
     {
         createHandler(filename);
         parseThroughAllPacket();
         assembleFlag();
         closeHandler();
+
+        return outputFlag;
     }
 };
 
@@ -279,5 +282,13 @@ int main(int argc, char *argv[])
     string file = string(argv[1]);
  
     parser parserInstance;
-    parserInstance.start(file);
+
+    ofstream outputFile;
+    outputFile.open("./FlagOutput");
+
+    parserInstance.plzJustShutUp();
+    string flag = parserInstance.start(file);
+
+    outputFile << "verfy " << flag << endl;
+    
 }
