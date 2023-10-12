@@ -70,7 +70,6 @@ class ChallengeParser
         int length;
         std::vector<int> payload;
     };
-    std::vector<Block> blocksList;
 
     struct Flag {
         // uint16_t length;        /* length of the offset array, in big-endian */
@@ -79,31 +78,6 @@ class ChallengeParser
         int length;
         std::vector<int> offset;
     }flag;
-public:
-
-    static bool blockCompare(const Block& b1, const Block& b2)
-    {
-        return b1.offset < b2.offset;
-    }
-
-    void setData(std::vector<unsigned char> _data)
-    {
-        data = _data;
-        std::cout << data.size() << std::endl;
-        for(int i = 0; i < data.size(); i++)
-        {
-            if(i != 0 && i % 16 == 0)
-            {
-                std::cout << '\n';
-            }
-            else if(i != 0 && i % 8 == 0)
-            {
-                std::cout << ' ';
-            }
-            std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)data[i] << ' ';
-        }
-        std::cout << std::dec << '\n';
-    }
     long long int valueOfBigEndianExpress(int start, int end)
     {
         long long int value = 0;
@@ -115,36 +89,19 @@ public:
         return value;
     }
 
-    void headerParser()
-    {
-        header.dictSize=valueOfBigEndianExpress(8, 11);
-        header.blockCount=valueOfBigEndianExpress(12, 13);
-        std::cout << "Dict size " << header.dictSize << " & Block Count " << header.blockCount << std::endl; 
-    }
-    Block blockHeaderParser(Block b, int curOffset)
+    void blockHeaderParser(Block& b, int curOffset)
     {
         b.offset=valueOfBigEndianExpress(curOffset, curOffset+3);
         b.cksum=valueOfBigEndianExpress(curOffset+4, curOffset+5);
         b.length=valueOfBigEndianExpress(curOffset+6, curOffset+7);
-
-        // output block header
-        std::cout << "Block Header: " << std::endl;
-        std::cout << "Offset: " << b.offset << std::endl;
-        std::cout << "Cksum: " << b.cksum << std::endl;
-        std::cout << "Length: " << b.length << std::endl;
-
-
-        return b;
     }
-    Block blockPayloadParser(Block b, int curOffset)
+    void blockPayloadParser(Block& b, int curOffset)
     {
         b.payload.resize(b.length);
         for(int i = 0; i < b.length; i++)
         {
             b.payload[i] = data[curOffset+i];
-            
         }
-        return b;
     }
     bool verfifyByCksum(const Block& b)
     {
@@ -155,79 +112,71 @@ public:
         }
         return XOR_val == b.cksum;
     }
-    void blocksParser()
+    Block oneBlockParser(int curOffset)
     {
-        blocksList.clear();
-
-        int currentBlockStart = FIRST_BLOCK_OFFSET;
-        for(int i = 0; i < header.blockCount; i++)
+        Block b;
+        blockHeaderParser(b, curOffset);
+        blockPayloadParser(b, curOffset+BLOCK_HEADER_OFFSET);
+        return b;
+    }
+    void pushBlockIntoDict(const Block& b)
+    {
+        for(int j = 0; j < b.length; j++)
         {
-            std::cout << "Block #" << i << std::endl;
-            Block b;
-            
-            b = blockHeaderParser(b, currentBlockStart);
-            b = blockPayloadParser(b, currentBlockStart+BLOCK_HEADER_OFFSET);
-            
-            if(verfifyByCksum(b))
-            {
-                std::cout << "Valid Block" << std::endl;
-                blocksList.push_back(b);
-            }
-            else
-            {
-                std::cout << "Invalid Block" << std::endl;
-            }
-
-            currentBlockStart += BLOCK_HEADER_OFFSET + b.length;
+            Dict[b.offset+j] = b.payload[j];
         }
-        FLAG_START_OFFSET = currentBlockStart;
-
-        sort(blocksList.begin(), blocksList.end(), ChallengeParser::blockCompare);
+    }
+    int forwardToNextBlockOffset(int curOffset, const Block& b)
+    {
+        return curOffset+b.length+BLOCK_HEADER_OFFSET;
     }
 
-    void dictConstructor()
+    void flagHeaderParser()
+    {
+        flag.length=valueOfBigEndianExpress(FLAG_START_OFFSET, FLAG_START_OFFSET+1);
+    }
+    void flagPayloadParser()
+    {
+        flag.offset.resize(flag.length);
+        for(int i = 0; i < flag.length; i++)
+        {
+            flag.offset[i] = valueOfBigEndianExpress(FLAG_START_OFFSET+FLAG_HEADER_OFFSET+(i*4), FLAG_START_OFFSET+FLAG_HEADER_OFFSET+(i*4+3));
+        }
+    }
+public:
+
+
+    void setData(std::vector<unsigned char> _data)
+    {
+        data = _data;
+    }
+
+    void headerParser()
+    {
+        header.dictSize=valueOfBigEndianExpress(8, 11);
+        header.blockCount=valueOfBigEndianExpress(12, 13);
+    }
+    void blocksParser()
     {
         Dict.resize(header.dictSize);
-        for(int i = 0; i < blocksList.size(); i++)
-        {
-            int offset = blocksList[i].offset;
-            
-            std::cout << "offset = " << offset << " and length = " << blocksList[i].length << std::endl;
-            for(int j = 0; j < blocksList[i].length; j++)
-            {
-                Dict[offset+j] = blocksList[i].payload[j];
-            }
-        }
-        for(int i = 0; i < Dict.size(); i++)
-        {
-            if(i != 0 && i % 16 == 0)
-            {
-                std::cout << '\n';
-            }
-            else if(i != 0 && i % 8 == 0)
-            {
-                std::cout << ' ';
-            }
-            std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)Dict[i] << ' ';
+        int currentBlockStart = FIRST_BLOCK_OFFSET;
 
+        for(int i = 0; i < header.blockCount; i++)
+        {
+            Block b = oneBlockParser(currentBlockStart);
+            if(verfifyByCksum(b))
+            {
+                pushBlockIntoDict(b);
+            }
+            currentBlockStart = forwardToNextBlockOffset(currentBlockStart, b);
         }
-        std::cout << std::dec << '\n';
+        FLAG_START_OFFSET = currentBlockStart;
     }
 
     void FlagParser()
     {
-        flag.length=valueOfBigEndianExpress(FLAG_START_OFFSET, FLAG_START_OFFSET+1);
-        flag.offset.resize(flag.length);
-
-
-        std::cout << "Flag Length: " << flag.length << std::endl;
-
-        std::cout << "Flag Offset: " << std::endl;
-        for(int i = 0; i < flag.length; i++)
-        {
-            flag.offset[i] = valueOfBigEndianExpress(FLAG_START_OFFSET+FLAG_HEADER_OFFSET+(i*4), FLAG_START_OFFSET+FLAG_HEADER_OFFSET+(i*4+3));
-            std::cout << flag.offset[i] << std::endl;
-        }
+        flagHeaderParser();
+        flagPayloadParser();
     }
 
     void decode()
@@ -236,7 +185,7 @@ public:
         for(int i = 0; i < flag.length; i++)
         {
             output << std::setw(2) << std::setfill('0') << std::hex << (int)(Dict[flag.offset[i]]);
-            output << std::setw(2) << std::setfill('0') << std::hex << (int)(Dict[flag.offset[i]+1]);
+            output << std::setw(2) << std::setfill('0') << std::hex << (int)(Dict[flag.offset[i]+1]);            
         }
         output.close();
     }
@@ -252,6 +201,5 @@ int main()
     cp.headerParser();
     cp.blocksParser();
     cp.FlagParser();
-    cp.dictConstructor();
     cp.decode();
 }
