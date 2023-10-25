@@ -1,0 +1,1 @@
+g++ -o ./TCPclient ./Client.cpp ./main.cpp ./MapSolver.cpp ./solver.cpp
