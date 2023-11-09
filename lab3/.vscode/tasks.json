@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++ build active file",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-std=c++11",
+                "-Wall",
+                "-Wextra",
+                "-pedantic",
+                "-o",
+                "${workspaceFolder}/TCPclient",
+                "${workspaceFolder}/main.cpp",
+                "${workspaceFolder}/Client.cpp",
+                "${workspaceFolder}/MapSolver.cpp",
+                "${workspaceFolder}/solver.cpp"
+            ],
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": "build",
+            "detail": "compiler: /usr/bin/g++"
+        }
+    ]
+}
