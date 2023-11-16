@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  shaper:
+    container_name: lab_shaper
+    build: .
+    image: chuang/lab_shaper
+    command: /usr/bin/iperf3 -s -p 9997
+    restart: "no"
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./dist:/dist:ro
+    networks:
+      default:
+
+  builder:
+    container_name: lab_builder
+    build: ./build
+    image: chuang/lab_builder
+    restart: "no"
+    volumes:
+      - "./dist:/build"
+    networks:
+      default:
+
+networks:
+  default:
