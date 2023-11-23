@@ -1,0 +1,3 @@
+[submodule "hw1/netshoot"]
+	path = hw1/netshoot
+	url = https://github.com/nicolaka/netshoot.git

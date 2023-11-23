@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+  lighttpd:
+    container_name: sw_lighttpd
+    build: .
+    image: chuang/staticweb
+    restart: unless-stopped
+    command: [ "/usr/sbin/lighttpd", "-D", "-f", "/server/lighttpd.conf" ]
+    ports:
+      - "10801:80"
+      - "10841:443"
+    volumes:
+      - ./cert:/cert:ro
+      - ./data:/html:ro
+      - ./lighttpd:/server:ro
+    networks:
+      default:
+
+  demo:
+    container_name: sw_demo
+    build: .
+    image: chuang/staticweb
+    restart: unless-stopped
+    command: [ "/usr/sbin/chroot", "--userspec=1000:1000", "/sandbox", "/server/server", "80", "/html", "443", "/cert/server.pem", "/cert/server.crt", "/cert/server.key" ]
+    ports:
+      - "10802:80"
+      - "10842:443"
+    volumes:
+      - ./cert:/sandbox/cert:ro
+      - ./data:/sandbox/html:ro
+      - ./demo:/sandbox/server:ro
+    networks:
+      default:
+
+  tester:
+    container_name: sw_tester
+    build: .
+    image: chuang/staticweb
+    restart: unless-stopped
+    volumes:
+      - ./cert:/cert:ro
+      - ./data:/html:ro
+      - ./testcase:/testcase:ro
+    networks:
+      default:
+
+  builder:
+    container_name: sw_builder
+    build: ./build
+    image: chuang/sw_builder
+    restart: unless-stopped
+    volumes:
+      - "./demo:/build"
+
+networks:
+  default:
