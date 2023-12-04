@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <bitset>
 #include <unistd.h>
 
 constexpr uint32_t RES_ACK     = 1 << 0;
@@ -44,13 +45,12 @@ struct ClientPacket {
     char     data[FRAGMENT_SIZE];
 };
 
-struct ResponsePacket {
+struct ServerStatePacket
+{
     uint16_t sessionID;
-    uint16_t seqNum;
-    // uint32_t flagChecksum;
-    uint32_t responseFlag;
+    std::bitset<1024> bitmap;
 };
 
 constexpr size_t INIT_MESSAGE_SIZE = sizeof(InitMessage);
 constexpr size_t CLIENT_PACKET_SIZE = sizeof(ClientPacket);
-constexpr size_t RESP_PACKET_SIZE = sizeof(ResponsePacket);
+constexpr size_t SERVER_STATE_PACKET_SIZE = sizeof(ServerStatePacket);
