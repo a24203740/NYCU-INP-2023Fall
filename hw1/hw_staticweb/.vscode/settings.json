@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "ioctl.h": "c",
+        "ioctls.h": "c",
+        "functional": "c",
+        "__locale": "c",
+        "random": "c",
+        "queue": "c",
+        "stack": "c",
+        "filesystem": "c"
+    }
+}

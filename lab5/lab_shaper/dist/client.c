@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 
 #define PORT 9999
-#define SIZE 1024*1024*16
+#define SIZE 1024*1024*32
 char buffer[SIZE];
 char bufferMessageWrite[256]="KKKK";
 char bufferMessageRead[256];
@@ -137,9 +137,10 @@ int main(int argc, char *argv[]) {
 	readWithSize(sockfd, serv_addr, SIZE);
 	close(sockfd);
 
-	double bandwidthInMbps = resolveBandwidth(delayInUs) / (0.9535);
+	double bandwidthInMbps = resolveBandwidth(delayInUs);
 	// round bandwidth to int
-	bandwidthInMbps = (int)(bandwidthInMbps + 0.4);
+	bandwidthInMbps = bandwidthInMbps / (0.9535);
+	bandwidthInMbps = (int)(bandwidthInMbps + 0.5);
 	double delayInMs = (double)delayInUs / 1000.0;
 	delayInMs = (int)(delayInMs);
 

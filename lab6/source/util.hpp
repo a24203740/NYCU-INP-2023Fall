@@ -90,10 +90,10 @@ inline void setSocketReuse(int sockfd) {
         errorQuit("setsockopt(SO_REUSEADDR)");
 }
 
-inline void setSocketTimeOut(int sockfd, int ms) {
+inline void setSocketTimeOut(int sockfd, int us) {
     struct timeval tv;
-    tv.tv_sec = ms / 1000;
-    tv.tv_usec = (ms % 1000) * 1000;
+    tv.tv_sec = us / 1000000;
+    tv.tv_usec = us % 1000000;
     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
         errorQuit("setsockopt(SO_RCVTIMEO)");
 }

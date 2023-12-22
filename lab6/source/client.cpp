@@ -49,16 +49,17 @@ int connectToServer() {
 	return s;
 }
 
-void sendClientPacket(int s, uint16_t sessionID, uint16_t seqNum, const void* data, size_t datalen) {
+void sendClientPacket(int s, uint16_t sessionID, uint16_t seqNum, uint32_t filesize , const void* data, size_t datalen) {
 	ClientPacket* pack = (ClientPacket*) malloc(CLIENT_PACKET_SIZE);
 	bzero((void *)pack, CLIENT_PACKET_SIZE);
     pack->sessionID = sessionID;
 	pack->seqNum = seqNum;
+	pack->filesize = filesize;
 	memcpy(pack->data, data, datalen);
 	// pack->checksum = checksum(pack);
     for(int i = 0; i < 1; i++)
         send(s, (void *)pack, CLIENT_PACKET_SIZE, 0);
-	std::this_thread::sleep_for(std::chrono::microseconds(625));
+	std::this_thread::sleep_for(std::chrono::microseconds(735));
 	free(pack);
 }
 
@@ -135,13 +136,6 @@ void createFileFragments(const FileHandler* fileHandler, std::vector<FileDataFra
 	}
 }
 
-
-
-void sendInitSession(int s, uint16_t sessionID, const InitMessage* filemetadata) {
-	sendClientPacket(s, sessionID, 0, (void *)filemetadata, INIT_MESSAGE_SIZE);
-}
-
-
 int main(int argc, char *argv[]) {
 	if (argc != 5){
         return -fprintf(stderr, "Usage: %s <path-to-read-files> <total-number-of-files> <port> <server-ip-address>", argv[0]);
@@ -162,73 +156,17 @@ int main(int argc, char *argv[]) {
 	openFiles.reserve(fileCount);
 	fileFragments.reserve(fileCount);
 
-	{
-		std::vector<InitMessage> initlist;
-		std::set<int> sessionNeedToInit;
-		// use fstat for acquireing filesize
-		for(int i = 0; i < fileCount; i++) {
-			// do not copy data, only get metadata
-			FileHandler* fileHandler = openFile(i, false); 
-			if(fileHandler == NULL) {
-				return -1;
-			}
-			InitMessage initMessage;
-			initMessage.filename = fileHandler->filename;
-			initMessage.filesize = fileHandler->filesize;
-			initlist.push_back(initMessage);
-			sessionNeedToInit.insert(i+1);
-			freeFileHandler(fileHandler);
-		}
-		// printf("all file opened, acquired only metadata\n");
-		int serverSocket = connectToServer();
-		setSocketTimeOut(serverSocket, 200);
-		setSocketRecvBuf(serverSocket, 1024*1024);
-		while (!sessionNeedToInit.empty())
-		{
-			// printf("left %lu session need to init\n", sessionNeedToInit.size());
-			for (auto sessID = sessionNeedToInit.begin(); sessID != sessionNeedToInit.end(); sessID++) {
-				int i = *sessID - 1;				
-				sendInitSession(serverSocket, *sessID, &initlist[i]);
-			}
-			while(true)
-			{
-				ServerStatePacket* sessionInitState = receiveServerState(serverSocket);
-				if(sessionInitState == nullptr) {
-					// fprintf(stderr, "malform response recieved\n");
-					continue;
-				}
-				if(sessionInitState->sessionID != 0) {
-					// fprintf(stderr, "timeout\n");
-					break;
-				}
-				for(int i = 0; i < 1024; i++)
-				{
-					if(sessionInitState->bitmap[i])
-					{
-						if(sessionNeedToInit.find(i+1) != sessionNeedToInit.end())
-						{
-							sessionNeedToInit.erase(i+1);
-						}
-					}
-				}
-				free(sessionInitState);
-			}
-		}
-		close(serverSocket);
-		initlist.clear();
-		printf("all session init complete\n");
-	}
-
 	// open at most 50 files at a time
 	int openFileBase = 0;
-	int openFileLimit = 250;
+	int openFileLimit = 275;
 	int completeFileCount = 0;
 
 	std::vector<std::set<int>> fragmentsNeedToSend(fileCount+1, std::set<int>());
 	
 	int serverSocket = connectToServer();
-	setSocketRecvBuf(serverSocket, 1024*1024*36);
-	setSocketTimeOut(serverSocket, 100);
+	setSocketRecvBuf(serverSocket, 1024*10*SERVER_STATE_PACKET_SIZE);
+	setSocketSendBuf(serverSocket, 1024*36*CLIENT_PACKET_SIZE);
+	setSocketTimeOut(serverSocket, 500);
 
 	while(completeFileCount < fileCount)
 	{
@@ -267,16 +205,17 @@ int main(int argc, char *argv[]) {
 			{
 				continue;
 			}
+			uint32_t filesize = openFiles[fileIndex]->filesize;
 			auto& fragsSet = fragmentsNeedToSend[fileIndex];
 			fragmentLeft += fragsSet.size();
 			int sessionID = fileIndex;
 			for (auto frag = fragsSet.begin(); frag != fragsSet.end(); frag++) {
 				int fragmentID = *frag;
 				FileDataFragment& fileDataFragment = fileFragments[sessionID][fragmentID];
-				sendClientPacket(serverSocket, sessionID+1, fragmentID+1, fileDataFragment.fragmentStart, FRAGMENT_SIZE);
+				sendClientPacket(serverSocket, sessionID, fragmentID, filesize, fileDataFragment.fragmentStart, FRAGMENT_SIZE);
 				packetSent++;
 			}
-			if(packetSent > 3000)
+			if(packetSent > 2200)
 			{
 				break;
 			}
@@ -294,12 +233,12 @@ int main(int argc, char *argv[]) {
 				// fprintf(stderr, "timeout\n");
 				break;
 			}
-			int sessionID = state->sessionID - 1;
+			int sessionID = state->sessionID;
 			if(sessionID < fileFragments.size() && fileFragments[sessionID].empty()) // completed
 			{
 				continue;
 			}
-			if(sessionID > fileFragments.size() || sessionID < 0) // invalid sessionID
+			if(sessionID >= fileFragments.size() || sessionID < 0) // invalid sessionID
 			{
 				continue;
 			}

@@ -25,7 +25,7 @@ int fileCount = 0;
 int port = 0;
 
 
-void sendServerState(int s, struct sockaddr_in* csin, uint16_t sessionID, std::bitset<1024> sessionState)
+void sendServerState(int s, struct sockaddr_in* csin, uint16_t sessionID, std::bitset<512> sessionState)
 {
 	ServerStatePacket* state = (ServerStatePacket*) malloc(SERVER_STATE_PACKET_SIZE);
 	bzero((void *)state, SERVER_STATE_PACKET_SIZE);
@@ -92,26 +92,24 @@ int main(int argc, char *argv[]) {
 		errorQuit("bind");
 
 	setSocketReuse(s);
-	setSocketRecvBuf(s, 1024*1024*36);
+	setSocketSendBuf(s, 1024*10*SERVER_STATE_PACKET_SIZE);
+	setSocketRecvBuf(s, 1024*36*CLIENT_PACKET_SIZE);
 
 	std::map<uint16_t, Session*> sessionsMap;
 
 	std::vector<std::vector<char*>> dataFragmentVector;
-	std::vector<std::bitset<1024>> sessionStates;
+	std::vector<std::bitset<512>> sessionStates;
 	std::bitset<1024> sessionHasBeenSentPacket;
 	std::bitset<1024> sessionHasInit;
 
-	dataFragmentVector.assign(fileCount+1, std::vector<char*>());
-	sessionStates.assign(fileCount+1, std::bitset<1024>());
+	dataFragmentVector.assign(fileCount, std::vector<char*>());
+	sessionStates.assign(fileCount, std::bitset<512>());
 	
-	int initCount = 0;
-	bool initDone = false;
 	auto lastSendTime = std::chrono::steady_clock::now();
 	while(1) 
 	{
 		struct sockaddr_in csin;
 		socklen_t csinlen = sizeof(csin);
-		bool mutex = false;
 		
 		// must free pack after use
 		ClientPacket* pack = receiveFromClient(s, &csin);
@@ -120,94 +118,59 @@ int main(int argc, char *argv[]) {
 		}
 		uint16_t sessionID = pack->sessionID;
 		uint16_t seqNum = pack->seqNum;
-		// init message
-		if(seqNum == 0) 
+
+		// haven't init
+		if(sessionHasInit.test(sessionID) == false)
 		{
-			initDone = false;
-			if(sessionsMap.find(sessionID) != sessionsMap.end()) 
-			{
-				// session already exists
-				fprintf(stderr, "session %d already exists\n", sessionID);
-				free(pack);
-			}
-			else
-			{
-				// create new session
-				Session* session = (Session*) malloc(sizeof(Session));
-				memcpy(&(session->fileMetadata), pack->data, INIT_MESSAGE_SIZE);
-				session->sessionID = sessionID;
-				session->recievedBytes = 0;
-				session->sessionComplete = false;
-				sessionsMap[sessionID] = session;
-				// create new data fragment vector
-				size_t fragmentCount = caculateFragmentCount(session->fileMetadata.filesize);
-				dataFragmentVector[sessionID].assign(fragmentCount, nullptr);
-				// response with ACK
-				// sendResponse(s, &csin, sessionID, 0, RES_ACK);
-				sessionHasInit.set(sessionID-1);
-				free(pack);
-				initCount++;
-			}
-			if(initCount == fileCount) 
-			{
-				printf("[SERVER]: all init message received\n");
-			}
-			mutex = true;
+			// create new session
+			Session* session = (Session*) malloc(sizeof(Session));
+			bzero((void *)session, sizeof(Session));
+			
+			session->fileMetadata.filename = pack->sessionID;
+			session->fileMetadata.filesize = pack->filesize;
+			session->sessionID = sessionID;
+			session->recievedBytes = 0;
+			session->sessionComplete = false;
+			sessionsMap[sessionID] = session;
+
+			size_t fragmentCount = caculateFragmentCount(session->fileMetadata.filesize);
+			dataFragmentVector[sessionID].assign(fragmentCount, nullptr);
+			sessionHasInit.set(sessionID);
 		}
 
-		// session not exists
-		if(!mutex && sessionsMap.find(sessionID) == sessionsMap.end()) {
-			fprintf(stderr, "session not exists\n");
-			//sendResponse(s, &csin, sessionID, seqNum, RES_RST);
-			free(pack);
-			mutex = true;
-			// continue;
-		}
-		// session exists
 		Session* session = sessionsMap[sessionID];
-		if(!mutex && session->sessionComplete) {
-			sessionHasBeenSentPacket.set(sessionID);
-			fprintf(stderr, "session already complete\n");
-			// printf("[SERVER]: file %d already complete\n", sessionID);
-			//sendResponse(s, &csin, sessionID, seqNum, RES_FIN);
-			free(pack);
-			mutex = true;
-			// continue;
-		}
-		// session haven't complete
-		
-		if(!mutex && session->recievedBytes < session->fileMetadata.filesize)
+		sessionHasBeenSentPacket.set(sessionID);
+
+		if(session->sessionComplete) 
 		{
-			sessionHasBeenSentPacket.set(sessionID);
-			// printf("received packet with sessionID=%d, seqNum=%d\n", pack->sessionID, pack->seqNum);
+			fprintf(stderr, "session already complete\n");
+		}
+		else if(session->recievedBytes < session->fileMetadata.filesize)
+		{
 			auto& dataFragment = dataFragmentVector[sessionID];
-			if(seqNum != 0 && dataFragment[seqNum-1] == nullptr) {
-				dataFragment[seqNum-1] = (char*) malloc(FRAGMENT_SIZE);
-				memcpy(dataFragment[seqNum-1], pack->data, FRAGMENT_SIZE);
+			if(dataFragment[seqNum] == nullptr) {
+				dataFragment[seqNum] = (char*) malloc(FRAGMENT_SIZE);
+				memcpy(dataFragment[seqNum], pack->data, FRAGMENT_SIZE);
 				session->recievedBytes += FRAGMENT_SIZE;
-				sessionStates[sessionID].set(seqNum-1);
+				sessionStates[sessionID].set(seqNum);
 			}
 			else
 			{
 				fprintf(stderr, "duplicate packet\n");
 			}
-			// printf("[SERVER]: file %d received %lu packet\n", sessionID, sessionStates[sessionID].count());
-			// sendResponse(s, &csin, sessionID, seqNum, RES_ACK);
-			free(pack);
 		}
+
+		free(pack);
 
 		// session complete
 		if(!session->sessionComplete && session->recievedBytes >= session->fileMetadata.filesize) 
 		{
+			// printf("\033[31m[SERVER]: session %d complete\033[0m\n", sessionID);
 			session->sessionComplete = true;
-			// write to file
 			char filename[256];
 			sprintf(filename, "%s/%06d", filePath, session->fileMetadata.filename);
 			FILE* file = fopen(filename, "wb");
-			if(file == NULL) {
-				fprintf(stderr, "cannot open file %s\n", filename);
-				continue;
-			}
+
 			auto& dataFragment = dataFragmentVector[sessionID];
 			size_t lastFragmentSize = session->fileMetadata.filesize % FRAGMENT_SIZE;
 			if(lastFragmentSize == 0)
@@ -222,35 +185,24 @@ int main(int argc, char *argv[]) {
 				free(dataFragment[i]);
 			}
 			fclose(file);
-			//printf("[SERVER]: file %s written\n", filename);
-			// sendResponse(s, &csin, sessionID, seqNum, RES_FIN);
 		}
 		{
 			auto now = std::chrono::steady_clock::now();
         	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSendTime);
-			if (duration.count() >= 400) {
-				if(initDone == false)
+			if (duration.count() >= 100) {
+
+				// send server state
+				// printf("\033[31m[SERVER]: send server state\033[0m\n");
+				for(int i = 0; i < sessionStates.size(); i++)
 				{
-					// send init message
-					// printf("\033[31m[SERVER]: send init message\033[0m\n");
-					sendServerState(s, &csin, 0, sessionHasInit);
-					initDone = true;
-				}
-				else
-				{
-					// send server state
-					// printf("\033[31m[SERVER]: send server state\033[0m\n");
-					for(int i = 1; i <= sessionStates.size(); i++)
+					if(!sessionHasBeenSentPacket.test(i))
 					{
-						if(!sessionHasBeenSentPacket.test(i))
-						{
-							continue;
-						}
-						auto& sessionState = sessionStates[i];
-						sendServerState(s, &csin, i, sessionState);
+						continue;
 					}
-					sessionHasBeenSentPacket.reset();
+					auto& sessionState = sessionStates[i];
+					sendServerState(s, &csin, i, sessionState);
 				}
+				sessionHasBeenSentPacket.reset();
 				lastSendTime = now;
 			}
         }

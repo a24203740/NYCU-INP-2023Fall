@@ -1,0 +1,7 @@
+FROM debian:bookworm
+
+ENV DEBIAN_FRONTEND noninteractive 
+RUN apt-get update && apt-get upgrade -y && apt-get install -y tini iproute2 iptables procps iputils-ping iperf3 tcpdump gcc g++ make
+
+ENTRYPOINT [ "/usr/bin/tini", "--" ]
+CMD [ "/usr/bin/sleep", "infinity" ]

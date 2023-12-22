@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 
 #define PORT 9999
-#define SIZE 1024*1024*16
+#define SIZE 1024*1024*32
 char buffer[SIZE];
 int main(int argc, char *argv[]) {
 
@@ -35,9 +35,11 @@ int main(int argc, char *argv[]) {
 		clilen = sizeof(cli_addr);
 		newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
 		read(newsockfd,bufferMessageRead,1);
+
 		write(newsockfd,bufferMessageWrite,1);
 		read(newsockfd,bufferMessageRead,1);
 		write(newsockfd,bufferMessageWrite,1);
+		
 		read(newsockfd,bufferMessageRead,1);
 		
 		int bytes = 0, written = 0;

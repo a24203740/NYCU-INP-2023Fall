@@ -11,8 +11,8 @@ constexpr uint32_t RES_MAGIC   = 0xDEADBEEF;
 
 // 1 session = 1 file
 struct InitMessage {
-    uint32_t    filename;
     uint32_t    filesize;
+    uint32_t    filename;
 };
 
 struct FileHandler {
@@ -34,21 +34,21 @@ struct FileDataFragment {
     char*       fragmentStart; // point to start of data, shared with FileHandler
 };
 
-constexpr size_t FRAGMENT_SIZE = 1350;
+constexpr size_t FRAGMENT_SIZE = 1450;
 constexpr size_t HEADER_SIZE = sizeof(uint16_t) 
-                                + sizeof(uint16_t); 
-                                // + sizeof(uint32_t);
+                                + sizeof(uint16_t)
+                                + sizeof(uint32_t);
 struct ClientPacket {
     uint16_t sessionID;
     uint16_t seqNum;
-    // uint32_t checksum;
+    uint32_t filesize;
     char     data[FRAGMENT_SIZE];
 };
 
 struct ServerStatePacket
 {
     uint16_t sessionID;
-    std::bitset<1024> bitmap;
+    std::bitset<512> bitmap;
 };
 
 constexpr size_t INIT_MESSAGE_SIZE = sizeof(InitMessage);
