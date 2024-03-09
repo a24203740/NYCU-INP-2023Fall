@@ -1,0 +1,32 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Register successfully.
+% Welcome, Tom.
+% Welcome to the public chat room.
+Room number: 25
+Owner: Bob
+[Bob]: I will win !!!
+Pin -> [Bob]: You are the challenger.
+Bob had enter the chat room.
+[Tom]: *****
+[Bob]: ?
+[Bob]: ****************.
+[Tom]: What?
+[Bob]: ****************!!!???
+Pin -> [Tom]: You are an ordinary person.
+Bob had left the chat room.
+Bob had enter the chat room.
+[Bob]: I'm sorry.
+[Bob]: I couldn't bring out the best in you.
+Bob offline
+Tom online
+[Tom]: I won't forget you.
+[Tom]: You can't beat me.
+[Tom]: Cheer up !!!
+Bob had left the chat room.
+[Tom]: Bye Bye.
+[Tom]: Who else?
+nobody had enter the chat room.
+nobody had left the chat room.
+% 

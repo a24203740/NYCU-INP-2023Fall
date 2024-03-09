@@ -1,0 +1,17 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Usage: register <username> <password>
+% Register successfully.
+% Username is already used.
+% Usage: login <username> <password>
+% Usage: login <username> <password>
+% Login failed.
+% Login failed.
+% Welcome, ta1.
+% ta1
+% Please logout first.
+% Bye, ta1.
+% Please login first.
+% Register successfully.
+% 

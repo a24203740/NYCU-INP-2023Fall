@@ -1,0 +1,14 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Register successfully.
+% Welcome, ta3.
+% ta1 offline
+ta2 offline
+ta3 online
+% set-status failed
+% ta3 busy
+% ta1 offline
+ta2 offline
+ta3 busy
+% Bye, ta3.

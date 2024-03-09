@@ -1,0 +1,19 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Register successfully.
+% Welcome, nobody.
+% Welcome to the public chat room.
+Room number: 25
+Owner: Bob
+[Bob]: ****************.
+[Tom]: What?
+[Bob]: ****************!!!???
+[Bob]: I'm sorry.
+[Bob]: I couldn't bring out the best in you.
+[Tom]: I won't forget you.
+[Tom]: You can't beat me.
+[Tom]: Cheer up !!!
+[Tom]: Bye Bye.
+[Tom]: Who else?
+% 

@@ -1,0 +1,18 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Register successfully.
+% Welcome, Squidward.
+% Squidward offline
+% Welcome to the public chat room.
+Room number: 10
+Owner: Squidward
+SpongeBob had enter the chat room.
+[Squidward]: (sighs) I hate my job
+Mr.Krabs had enter the chat room.
+[Mr.Krabs]: Squidward, your work attitude needs to change.
+Mr.Krabs had left the chat room.
+SpongeBob had left the chat room.
+Mr.Krabs had enter the chat room.
+% Chat room 10 was closed.
+% 

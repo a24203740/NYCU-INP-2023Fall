@@ -1,0 +1,25 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Register successfully.
+% Welcome, ta1.
+% Usage: enter-chat-room <number>
+% Number 1010 is not valid.
+% Welcome to the public chat room.
+Room number: 20
+Owner: ta1
+% Welcome to the public chat room.
+Room number: 30
+Owner: ta1
+[ta1]: *****, i am ta1
+[ta1]: i am waiting for everyone.
+ta2 had enter the chat room.
+[ta2]: merry christmas!
+[ta1]: exit
+% ta1 20
+ta1 30
+% Chat room 35 does not exist.
+% Chat room 20 was closed.
+% ta1 30
+% Chat room 30 was closed.
+% % Bye, ta1.

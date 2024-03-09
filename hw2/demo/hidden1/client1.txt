@@ -1,0 +1,14 @@
+*********************************
+** Welcome to the Chat server. **
+*********************************
+% Usage: login <username> <password>
+% Register successfully.
+% Welcome, abc123.
+% Welcome to the public chat room.
+Room number: 12
+Owner: abc123
+[abc123]: ****************!!!
+Pin -> [abc123]: ****************!!!
+Pin -> [abc123]: ****************!!!
+abc123 online
+[abc123]: exit
